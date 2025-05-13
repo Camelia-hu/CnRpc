@@ -18,6 +18,8 @@ const (
 	RoundRobinSelect
 )
 
+const defaultUpdateTimeout = time.Second * 10
+
 type Discovery interface {
 	Refresh() error
 	Update(servers []string) error
@@ -30,6 +32,13 @@ type MultiServersDiscovery struct {
 	mu      sync.RWMutex
 	servers []string
 	index   int
+}
+
+type CnRegistryDiscovery struct {
+	*MultiServersDiscovery
+	registry   string
+	timeout    time.Duration
+	lastUpdate time.Time
 }
 
 func (d *MultiServersDiscovery) Refresh() error {
@@ -80,15 +89,6 @@ func NewMultiServerDiscovery(servers []string) *MultiServersDiscovery {
 }
 
 var _ Discovery = (*MultiServersDiscovery)(nil)
-
-type CnRegistryDiscovery struct {
-	*MultiServersDiscovery
-	registry   string
-	timeout    time.Duration
-	lastUpdate time.Time
-}
-
-const defaultUpdateTimeout = time.Second * 10
 
 func NewCnRegistryDiscovery(registerAddr string, timeout time.Duration) *CnRegistryDiscovery {
 	if timeout == 0 {

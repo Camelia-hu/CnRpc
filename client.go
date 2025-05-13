@@ -25,10 +25,6 @@ type Call struct {
 	Done          chan *Call
 }
 
-func (c *Call) done() {
-	c.Done <- c
-}
-
 type Client struct {
 	cc       codec.Codec
 	opt      *Option
@@ -41,9 +37,20 @@ type Client struct {
 	shutdown bool
 }
 
-var _ io.Closer = (*Client)(nil)
-
 var ErrShutdown = errors.New("connection is shut down")
+
+type clientResult struct {
+	client *Client
+	err    error
+}
+
+type newClientFunc func(conn net.Conn, opt *Option) (client *Client, err error)
+
+func (c *Call) done() {
+	c.Done <- c
+}
+
+var _ io.Closer = (*Client)(nil)
 
 func (client *Client) Close() error {
 	client.mu.Lock()
@@ -234,13 +241,6 @@ func (client *Client) Call(ctx context.Context, serviceMethod string, args, repl
 		return call.Error
 	}
 }
-
-type clientResult struct {
-	client *Client
-	err    error
-}
-
-type newClientFunc func(conn net.Conn, opt *Option) (client *Client, err error)
 
 func dialTimeout(f newClientFunc, network, address string, opts ...*Option) (client *Client, err error) {
 	opt, err := parseOptions(opts...)

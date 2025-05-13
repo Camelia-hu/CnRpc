@@ -14,6 +14,13 @@ type methodType struct {
 	numCalls  uint64
 }
 
+type service struct {
+	name   string
+	typ    reflect.Type
+	rcvr   reflect.Value
+	method map[string]*methodType
+}
+
 func (m *methodType) NumCalls() uint64 {
 	return atomic.LoadUint64(&m.numCalls)
 }
@@ -37,13 +44,6 @@ func (m *methodType) newReplyv() reflect.Value {
 		replyv.Elem().Set(reflect.MakeSlice(m.ReplyType.Elem(), 0, 0))
 	}
 	return replyv
-}
-
-type service struct {
-	name   string
-	typ    reflect.Type
-	rcvr   reflect.Value
-	method map[string]*methodType
 }
 
 func newService(rcvr interface{}) *service {

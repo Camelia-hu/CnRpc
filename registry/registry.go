@@ -25,14 +25,14 @@ const (
 	defaultTimeout = time.Minute * 5
 )
 
+var DefaultCnRegistry = New(defaultTimeout)
+
 func New(timeout time.Duration) *CnRegistry {
 	return &CnRegistry{
 		timeout: timeout,
 		servers: make(map[string]*ServerItem),
 	}
 }
-
-var DefaultCnRegistry = New(defaultTimeout)
 
 func (r *CnRegistry) putServer(addr string) {
 	r.mu.Lock()

@@ -17,6 +17,12 @@ import (
 
 const MagicNumber = 0x3bef5c
 
+const (
+	connected        = "200 Connected to Gee RPC"
+	defaultRPCPath   = "/_geeprc_"
+	defaultDebugPath = "/debug/geerpc"
+)
+
 type Option struct {
 	MagicNumber    int
 	CodeType       codec.Type
@@ -34,11 +40,20 @@ type Server struct {
 	serviceMap sync.Map
 }
 
-func NewServer() *Server {
-	return &Server{}
+type request struct {
+	h            *codec.Header // header of request
+	argv, replyv reflect.Value // argv and replyv of request
+	mtype        *methodType
+	svc          *service
 }
 
 var DefaultServer = NewServer()
+
+var invalidRequest = struct{}{}
+
+func NewServer() *Server {
+	return &Server{}
+}
 
 func (s *Server) Accept(lis net.Listener) {
 	for {
@@ -80,8 +95,6 @@ func (s *Server) ServerConn(conn io.ReadWriteCloser) {
 	s.serveCodec(f(conn))
 }
 
-var invalidRequest = struct{}{}
-
 func (s *Server) serveCodec(cc codec.Codec) {
 	sending := new(sync.Mutex)
 	wg := new(sync.WaitGroup)
@@ -101,13 +114,6 @@ func (s *Server) serveCodec(cc codec.Codec) {
 	}
 	wg.Wait()
 	_ = cc.Close()
-}
-
-type request struct {
-	h            *codec.Header // header of request
-	argv, replyv reflect.Value // argv and replyv of request
-	mtype        *methodType
-	svc          *service
 }
 
 func (s *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
@@ -217,12 +223,6 @@ func (s *Server) findService(serviceMethod string) (svc *service, mtype *methodT
 	}
 	return
 }
-
-const (
-	connected        = "200 Connected to Gee RPC"
-	defaultRPCPath   = "/_geeprc_"
-	defaultDebugPath = "/debug/geerpc"
-)
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "CONNECT" {
